@@ -1,10 +1,16 @@
-import { kv } from "@vercel/kv";
+import { createClient } from "redis";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type",
 };
+
+async function getRedis() {
+  const client = createClient({ url: process.env.REDIS_URL });
+  await client.connect();
+  return client;
+}
 
 export default async function handler(req, res) {
   if (req.method === "OPTIONS") {
@@ -58,7 +64,8 @@ export default async function handler(req, res) {
     return res.status(502).json({ error: "Failed to reach Claude API: " + err.message });
   }
 
-  // Try to parse JSON and save to KV
+  // Try to parse JSON and save to Redis
+  let redis;
   try {
     const parsed = JSON.parse(rawText);
     if (parsed.team_a && parsed.team_b && !parsed.error) {
@@ -68,10 +75,13 @@ export default async function handler(req, res) {
           .map((t) => t.toLowerCase().trim())
           .sort()
           .join("|");
-      await kv.set(key, JSON.stringify({ data: parsed, savedAt: Date.now() }), { ex: 86400 });
+      redis = await getRedis();
+      await redis.set(key, JSON.stringify({ data: parsed, savedAt: Date.now() }), { EX: 86400 });
     }
   } catch {
     // Not valid JSON or not a match analysis — skip saving
+  } finally {
+    if (redis) await redis.quit().catch(() => {});
   }
 
   return res.status(200).json({ text: rawText });

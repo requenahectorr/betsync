@@ -1,10 +1,16 @@
-import { kv } from "@vercel/kv";
+import { createClient } from "redis";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type",
 };
+
+async function getRedis() {
+  const client = createClient({ url: process.env.REDIS_URL });
+  await client.connect();
+  return client;
+}
 
 export default async function handler(req, res) {
   if (req.method === "OPTIONS") {
@@ -17,6 +23,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
+  let redis;
   try {
     const { team_a, team_b } = req.body || {};
 
@@ -31,15 +38,18 @@ export default async function handler(req, res) {
         .sort()
         .join("|");
 
-    const raw = await kv.get(key);
+    redis = await getRedis();
+    const raw = await redis.get(key);
 
     if (!raw) {
       return res.status(200).json({ cached: false });
     }
 
-    const entry = typeof raw === "string" ? JSON.parse(raw) : raw;
+    const entry = JSON.parse(raw);
     return res.status(200).json({ cached: true, data: entry.data, savedAt: entry.savedAt });
   } catch {
     return res.status(200).json({ cached: false });
+  } finally {
+    if (redis) await redis.quit().catch(() => {});
   }
 }
