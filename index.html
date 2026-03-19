@@ -321,11 +321,6 @@ Reglas:
 Solo JSON puro.`;
 }
 
-const UPCOMING_PROMPT = `Dame los próximos 15 partidos de fútbol en las principales ligas europeas (La Liga, Premier League, Serie A, Bundesliga, Ligue 1, Champions League, Europa League). Solo partidos que AÚN NO se han jugado.
-
-Responde SOLO con JSON válido (sin backticks):
-{ "matches": [ { "home": "Equipo Local", "away": "Equipo Visitante", "league": "Liga", "date": "día mes" } ] }
-Ordénalos por fecha. Solo JSON.`;
 
 // ─── Utilities ───────────────────────────────────────────────────
 function timeAgo(ms) {
@@ -455,55 +450,11 @@ function ResultScreen({ data, onBack }) {
   );
 }
 
-// ─── SkeletonChips ───────────────────────────────────────────────
-function SkeletonChips() {
-  return (
-    <div>
-      {[...Array(6)].map((_, i) => (
-        <div key={i} className="skeleton skeleton-chip" style={{ marginBottom: 8 }} />
-      ))}
-    </div>
-  );
-}
-
 // ─── AnalyzeTab ──────────────────────────────────────────────────
 function AnalyzeTab({ onResult }) {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [upcoming, setUpcoming] = useState(null);
-  const [cachedKeys, setCachedKeys] = useState({});
-
-  // Load upcoming matches and check cache for each
-  useEffect(() => {
-    let cancelled = false;
-    async function loadUpcoming() {
-      try {
-        const text = await apiAnalyze(UPCOMING_PROMPT, 1200);
-        if (cancelled) return;
-        const parsed = safeParseJSON(text);
-        const matches = parsed?.matches || [];
-        setUpcoming(matches);
-
-        // Check cache for each match
-        const checks = await Promise.all(
-          matches.map(m => apiCheckCache(m.home, m.away))
-        );
-        if (cancelled) return;
-        const keys = {};
-        matches.forEach((m, i) => {
-          if (checks[i]?.cached) {
-            keys[`${m.home}|${m.away}`] = true;
-          }
-        });
-        setCachedKeys(keys);
-      } catch {
-        if (!cancelled) setUpcoming([]);
-      }
-    }
-    loadUpcoming();
-    return () => { cancelled = true; };
-  }, []);
 
   async function runAnalysis(teamInput) {
     setError("");
@@ -534,14 +485,8 @@ function AnalyzeTab({ onResult }) {
     if (input.trim()) runAnalysis(input.trim());
   }
 
-  function handleChip(m) {
-    const label = `${m.home} vs ${m.away}`;
-    setInput(label);
-    runAnalysis(label);
-  }
-
   return (
-    <div>
+    <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", minHeight: "55vh" }}>
       <form onSubmit={handleSubmit} style={{ marginBottom: 0 }}>
         <div className="input-wrap">
           <input
@@ -565,30 +510,6 @@ function AnalyzeTab({ onResult }) {
       <p className="helper-text">Escríbelo como quieras: Barça vs Madrid, athletic betis, Atleti contra Sevilla...</p>
 
       {error && <div className="error-box">⚠️ {error}</div>}
-
-      <div className="section-title">📅 Próximos partidos en Europa</div>
-
-      {upcoming === null ? (
-        <SkeletonChips />
-      ) : upcoming.length === 0 ? (
-        <p style={{ color: "var(--muted)", fontSize: 13 }}>No se pudieron cargar los próximos partidos.</p>
-      ) : (
-        <div className="upcoming-grid">
-          {upcoming.map((m, i) => {
-            const isCached = !!cachedKeys[`${m.home}|${m.away}`];
-            return (
-              <div key={i} className="match-chip" onClick={() => handleChip(m)}>
-                <span className="league-badge" style={{ background: leagueBg(m.league) }}>
-                  {m.league?.split(" ")[0]}
-                </span>
-                <span className="chip-teams">{m.home} vs {m.away}</span>
-                <span className="chip-date">{m.date}</span>
-                {isCached && <span className="chip-cached">✓ LISTO</span>}
-              </div>
-            );
-          })}
-        </div>
-      )}
     </div>
   );
 }
