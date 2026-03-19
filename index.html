@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="BetSync" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="theme-color" content="#0b0e14" />
+  <title>BetSync</title>
+  <link rel="manifest" href="data:application/json,%7B%22name%22%3A%22BetSync%22%2C%22short_name%22%3A%22BetSync%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%230b0e14%22%2C%22theme_color%22%3A%22%230b0e14%22%2C%22start_url%22%3A%22%2F%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22data%3Aimage%2Fsvg%2Bxml%2C%253Csvg%2520xmlns%3D%2527http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%2527%2520viewBox%3D%270%200%20512%20512%2527%253E%253Crect%2520width%3D%27512%2527%2520height%3D%27512%2527%2520fill%3D%27%230b0e14%2527%2F%253E%253Ctext%2520x%3D%27256%2527%2520y%3D%27320%2527%2520font-size%3D%27300%2527%2520text-anchor%3D%27middle%2527%253E%E2%9A%BD%253C%2Ftext%253E%253C%2Fsvg%253E%22%2C%22sizes%22%3A%22512x512%22%2C%22type%22%3A%22image%2Fsvg%2Bxml%22%7D%5D%7D" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0b0e14;
+      --bg2: #111520;
+      --bg3: #161b27;
+      --border: rgba(255,255,255,0.06);
+      --border2: rgba(255,255,255,0.1);
+      --text: #e8eaf0;
+      --muted: #6b7280;
+      --green: #22c55e;
+      --green-dim: rgba(34,197,94,0.12);
+      --gold: #fbbf24;
+      --gold-dim: rgba(251,191,36,0.12);
+      --red: #ef4444;
+      --red-dim: rgba(239,68,68,0.15);
+      --gray-draw: #52525b;
+    }
+
+    html, body { height: 100%; background: var(--bg); color: var(--text); }
+    body { font-family: 'DM Sans', sans-serif; font-size: 15px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+    #root { min-height: 100vh; display: flex; flex-direction: column; align-items: center; }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(14px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 0.4; }
+      50%       { opacity: 0.9; }
+    }
+
+    .fade-up { animation: fadeUp 0.35s ease both; }
+    .fade-up-1 { animation: fadeUp 0.35s 80ms ease both; }
+    .fade-up-2 { animation: fadeUp 0.35s 160ms ease both; }
+    .fade-up-3 { animation: fadeUp 0.35s 240ms ease both; }
+
+    .skeleton {
+      background: var(--bg3);
+      border-radius: 6px;
+      animation: pulse 1.4s ease infinite;
+    }
+
+    .spinner {
+      width: 20px; height: 20px;
+      border: 2px solid rgba(34,197,94,0.25);
+      border-top-color: var(--green);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      display: inline-block;
+    }
+
+    .app { width: 100%; max-width: 500px; padding: 0 16px 100px; }
+
+    /* Header */
+    .header {
+      display: flex; align-items: center; gap: 10px;
+      padding: 20px 0 16px;
+    }
+    .header-logo { font-family: 'DM Mono', monospace; font-size: 18px; font-weight: 500; color: var(--green); letter-spacing: -0.5px; }
+    .header-back { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 18px; padding: 4px 8px 4px 0; display: flex; align-items: center; gap: 6px; font-family: 'DM Sans', sans-serif; }
+    .header-back:hover { color: var(--text); }
+
+    /* Tabs */
+    .tabs { display: flex; gap: 4px; background: var(--bg3); border-radius: 10px; padding: 4px; margin-bottom: 20px; }
+    .tab { flex: 1; padding: 9px 12px; border: none; background: none; color: var(--muted); font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500; border-radius: 7px; cursor: pointer; transition: all 0.18s; }
+    .tab.active { background: var(--bg); color: var(--text); box-shadow: 0 1px 6px rgba(0,0,0,0.4); }
+    .tab:hover:not(.active) { color: var(--text); }
+
+    /* Input area */
+    .input-wrap { position: relative; margin-bottom: 10px; }
+    .input-field {
+      width: 100%; padding: 14px 16px; background: var(--bg3);
+      border: 1px solid var(--border2); border-radius: 10px;
+      color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 15px;
+      outline: none; transition: border-color 0.18s;
+    }
+    .input-field:focus { border-color: var(--green); }
+    .input-field::placeholder { color: var(--muted); }
+
+    .btn-analyze {
+      width: 100%; padding: 14px; background: var(--green); color: #000;
+      border: none; border-radius: 10px; font-family: 'DM Sans', sans-serif;
+      font-size: 15px; font-weight: 700; cursor: pointer; letter-spacing: 0.5px;
+      transition: opacity 0.18s, transform 0.12s;
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+    }
+    .btn-analyze:disabled { opacity: 0.35; cursor: not-allowed; }
+    .btn-analyze:not(:disabled):hover { opacity: 0.9; transform: translateY(-1px); }
+    .btn-analyze:not(:disabled):active { transform: translateY(0); }
+
+    .helper-text { font-size: 12px; color: var(--muted); margin-top: 8px; line-height: 1.5; }
+
+    /* Section titles */
+    .section-title { font-size: 12px; font-weight: 600; color: var(--muted); letter-spacing: 0.8px; text-transform: uppercase; margin: 24px 0 12px; }
+
+    /* Upcoming chips */
+    .upcoming-grid { display: flex; flex-direction: column; gap: 8px; }
+    .match-chip {
+      display: flex; align-items: center; gap: 10px;
+      background: var(--bg3); border: 1px solid var(--border);
+      border-radius: 10px; padding: 10px 12px; cursor: pointer;
+      transition: border-color 0.18s, background 0.18s;
+    }
+    .match-chip:hover { border-color: var(--border2); background: var(--bg2); }
+    .match-chip:active { background: var(--bg); }
+    .league-badge {
+      font-family: 'DM Mono', monospace; font-size: 10px; font-weight: 500;
+      padding: 3px 7px; border-radius: 4px; white-space: nowrap; flex-shrink: 0;
+      color: #fff; letter-spacing: 0.3px;
+    }
+    .chip-teams { flex: 1; font-size: 13px; font-weight: 500; color: var(--text); }
+    .chip-date { font-size: 11px; color: var(--muted); font-family: 'DM Mono', monospace; flex-shrink: 0; }
+    .chip-cached { font-size: 10px; font-weight: 700; color: var(--green); letter-spacing: 0.5px; flex-shrink: 0; }
+
+    /* Skeleton rows */
+    .skeleton-chip { height: 52px; border-radius: 10px; margin-bottom: 8px; }
+
+    /* Saved tab */
+    .saved-list { display: flex; flex-direction: column; gap: 8px; }
+    .saved-item {
+      background: var(--bg3); border: 1px solid var(--border);
+      border-radius: 10px; padding: 14px 16px; cursor: pointer;
+      transition: border-color 0.18s;
+    }
+    .saved-item:hover { border-color: var(--border2); }
+    .saved-item-title { font-size: 14px; font-weight: 600; }
+    .saved-item-meta { font-size: 11px; color: var(--muted); margin-top: 3px; font-family: 'DM Mono', monospace; }
+    .saved-note { font-size: 12px; color: var(--muted); text-align: center; margin-top: 12px; }
+    .saved-empty { text-align: center; padding: 48px 0; color: var(--muted); }
+    .saved-empty-icon { font-size: 40px; margin-bottom: 12px; }
+
+    /* Results screen */
+    .result-match-card {
+      background: var(--green-dim); border: 1px solid rgba(34,197,94,0.2);
+      border-radius: 12px; padding: 16px; text-align: center;
+      margin-bottom: 20px;
+    }
+    .result-match-title { font-size: 18px; font-weight: 700; color: var(--green); }
+
+    .result-section {
+      background: var(--bg3); border: 1px solid var(--border);
+      border-radius: 12px; padding: 16px; margin-bottom: 12px;
+    }
+    .result-section-title { font-size: 12px; font-weight: 600; color: var(--muted); letter-spacing: 0.8px; text-transform: uppercase; margin-bottom: 14px; }
+
+    /* Form table */
+    .form-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .form-team-name { font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .form-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+    .form-badge {
+      width: 22px; height: 22px; border-radius: 4px; display: flex;
+      align-items: center; justify-content: center; font-size: 10px;
+      font-weight: 700; flex-shrink: 0; font-family: 'DM Mono', monospace;
+    }
+    .form-badge.W { background: rgba(34,197,94,0.2); color: var(--green); }
+    .form-badge.D { background: rgba(82,82,91,0.4); color: #a1a1aa; }
+    .form-badge.L { background: var(--red-dim); color: var(--red); }
+    .form-info { flex: 1; min-width: 0; }
+    .form-rival { font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .form-score { font-size: 11px; font-family: 'DM Mono', monospace; color: var(--text); }
+    .form-dots { display: flex; gap: 4px; margin-top: 10px; }
+    .form-dot { width: 8px; height: 8px; border-radius: 50%; }
+    .form-dot.W { background: var(--green); }
+    .form-dot.D { background: var(--gray-draw); }
+    .form-dot.L { background: var(--red); }
+
+    /* Shooters */
+    .shooters-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .shooter-row {
+      display: flex; align-items: center; gap: 8px; padding: 8px 10px;
+      background: var(--bg2); border-radius: 8px; margin-bottom: 6px;
+      border: 1px solid var(--border);
+    }
+    .shooter-row.top { border-color: rgba(251,191,36,0.25); background: var(--gold-dim); }
+    .shooter-num {
+      width: 22px; height: 22px; border-radius: 50%; display: flex;
+      align-items: center; justify-content: center; font-size: 10px;
+      font-weight: 700; flex-shrink: 0; font-family: 'DM Mono', monospace;
+    }
+    .shooter-num.gold { background: var(--gold-dim); color: var(--gold); border: 1px solid rgba(251,191,36,0.3); }
+    .shooter-num.gray { background: rgba(255,255,255,0.05); color: var(--muted); }
+    .shooter-info { flex: 1; min-width: 0; }
+    .shooter-name { font-size: 12px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .shooter-stats { display: flex; gap: 6px; margin-top: 2px; }
+    .shooter-on-target { font-size: 11px; font-family: 'DM Mono', monospace; color: var(--gold); }
+    .shooter-total { font-size: 11px; font-family: 'DM Mono', monospace; color: var(--muted); }
+
+    /* Prediction card */
+    .pred-context { font-size: 13px; color: var(--muted); line-height: 1.6; }
+    .pred-divider { border: none; border-top: 1px solid var(--border); margin: 12px 0; }
+    .pred-prediction { font-size: 14px; font-weight: 600; color: var(--green); line-height: 1.6; }
+
+    /* Back button */
+    .btn-back {
+      width: 100%; padding: 13px; background: var(--bg3);
+      border: 1px solid var(--border2); border-radius: 10px;
+      color: var(--text); font-family: 'DM Sans', sans-serif;
+      font-size: 14px; font-weight: 600; cursor: pointer; margin-top: 20px;
+      transition: background 0.18s;
+    }
+    .btn-back:hover { background: var(--bg2); }
+
+    /* Error box */
+    .error-box {
+      background: var(--red-dim); border: 1px solid rgba(239,68,68,0.2);
+      border-radius: 10px; padding: 14px 16px; font-size: 13px; color: var(--red);
+      margin-top: 14px;
+    }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useCallback, useRef } = React;
+
+// ─── League colors ───────────────────────────────────────────────
+const LEAGUE_COLORS = {
+  "La Liga":         "#ff6b35",
+  "Premier League":  "#3d195b",
+  "Serie A":         "#024494",
+  "Bundesliga":      "#d20515",
+  "Ligue 1":         "#091c3e",
+  "Champions League":"#0d1541",
+  "Europa League":   "#f37021",
+};
+
+function leagueBg(league) {
+  for (const [k, v] of Object.entries(LEAGUE_COLORS)) {
+    if (league && league.includes(k.split(" ")[0])) return v;
+  }
+  return "#333";
+}
+
+// ─── API helpers ─────────────────────────────────────────────────
+async function apiAnalyze(prompt, maxTokens = 4000) {
+  const r = await fetch("/api/analyze", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ prompt, max_tokens: maxTokens }),
+  });
+  const j = await r.json();
+  if (j.error) throw new Error(j.error);
+  return j.text;
+}
+
+async function apiCheckCache(teamA, teamB) {
+  try {
+    const r = await fetch("/api/cache", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ team_a: teamA, team_b: teamB }),
+    });
+    return await r.json();
+  } catch {
+    return { cached: false };
+  }
+}
+
+async function apiGetSaved() {
+  try {
+    const r = await fetch("/api/saved");
+    const j = await r.json();
+    return j.analyses || [];
+  } catch {
+    return [];
+  }
+}
+
+// ─── Prompts ─────────────────────────────────────────────────────
+function buildMatchPrompt(input) {
+  return `Eres un analista deportivo de fútbol. El usuario quiere analizar un partido y ha escrito esto: "${input}".
+
+IMPORTANTE: El usuario puede escribir los equipos de muchas formas: "equipo1 vs equipo2", "equipo1 contra equipo2", "equipo1, equipo2", "equipo1 - equipo2", o incluso con faltas de ortografía. Interpreta los equipos correctamente. Si no puedes identificar los dos equipos, responde SOLO con: {"error": "No he podido identificar los equipos. Prueba con el formato: Equipo 1 vs Equipo 2"}
+
+Responde SOLO con un JSON válido (sin backticks, sin markdown) con esta estructura:
+
+{
+  "team_a": "NombreOficialA",
+  "team_b": "NombreOficialB",
+  "form": {
+    "team_a": [ { "opponent": "Rival", "score": "2-1", "result": "W" } ],
+    "team_b": [...]
+  },
+  "shooters": {
+    "team_a": [ { "name": "Jugador", "shots_pg": 3.2, "on_target_pg": 1.8 } ],
+    "team_b": [...]
+  },
+  "context": "Contexto breve en 2 frases.",
+  "prediction": "Predicción concreta en 2 frases."
+}
+
+Reglas:
+1) "form" = EXACTAMENTE 10 partidos recientes de cada equipo, del más reciente al más antiguo. "result": "W", "D" o "L".
+2) "shooters" = top 3 jugadores con más tiros a puerta por partido. shots_pg = tiros totales, on_target_pg = a puerta.
+3) En prediccion: resultado probable, corners totales, tarjetas totales, goles +/- 2.5. Máximo 2 frases.
+4) Usa nombre oficial del equipo aunque el usuario lo escriba mal.
+
+Solo JSON puro.`;
+}
+
+const UPCOMING_PROMPT = `Dame los próximos 15 partidos de fútbol en las principales ligas europeas (La Liga, Premier League, Serie A, Bundesliga, Ligue 1, Champions League, Europa League). Solo partidos que AÚN NO se han jugado.
+
+Responde SOLO con JSON válido (sin backticks):
+{ "matches": [ { "home": "Equipo Local", "away": "Equipo Visitante", "league": "Liga", "date": "día mes" } ] }
+Ordénalos por fecha. Solo JSON.`;
+
+// ─── Utilities ───────────────────────────────────────────────────
+function timeAgo(ms) {
+  const diff = Date.now() - ms;
+  const h = Math.floor(diff / 3600000);
+  const m = Math.floor(diff / 60000);
+  if (h >= 1) return `hace ${h}h`;
+  if (m >= 1) return `hace ${m}m`;
+  return "ahora";
+}
+
+function parseTeams(input) {
+  const s = input.trim();
+  const separators = [" vs ", " VS ", " Vs ", " contra ", " - ", " , ", ", "];
+  for (const sep of separators) {
+    const idx = s.indexOf(sep);
+    if (idx > 0) {
+      const a = s.slice(0, idx).trim();
+      const b = s.slice(idx + sep.length).trim();
+      if (a && b) return [a, b];
+    }
+  }
+  return null;
+}
+
+function safeParseJSON(text) {
+  try {
+    // Strip possible backtick-wrapped JSON
+    const cleaned = text.replace(/```json\n?/gi, "").replace(/```\n?/gi, "").trim();
+    return JSON.parse(cleaned);
+  } catch {
+    return null;
+  }
+}
+
+// ─── FormDotsRow ─────────────────────────────────────────────────
+function FormDotsRow({ form }) {
+  const last5 = (form || []).slice(0, 5);
+  return (
+    <div className="form-dots">
+      {last5.map((m, i) => (
+        <div key={i} className={`form-dot ${m.result}`} title={m.result} />
+      ))}
+    </div>
+  );
+}
+
+// ─── FormColumn ──────────────────────────────────────────────────
+function FormColumn({ name, form }) {
+  return (
+    <div>
+      <div className="form-team-name">{name}</div>
+      {(form || []).slice(0, 10).map((m, i) => (
+        <div key={i} className="form-row">
+          <div className={`form-badge ${m.result}`}>
+            {m.result === "W" ? "V" : m.result === "L" ? "D" : "E"}
+          </div>
+          <div className="form-info">
+            <div className="form-rival">{m.opponent}</div>
+            <div className="form-score">{m.score}</div>
+          </div>
+        </div>
+      ))}
+      <FormDotsRow form={form} />
+    </div>
+  );
+}
+
+// ─── ShooterColumn ───────────────────────────────────────────────
+function ShooterColumn({ name, shooters }) {
+  return (
+    <div>
+      <div className="form-team-name">{name}</div>
+      {(shooters || []).slice(0, 3).map((p, i) => (
+        <div key={i} className={`shooter-row ${i === 0 ? "top" : ""}`}>
+          <div className={`shooter-num ${i === 0 ? "gold" : "gray"}`}>{i + 1}</div>
+          <div className="shooter-info">
+            <div className="shooter-name">{p.name}</div>
+            <div className="shooter-stats">
+              <span className="shooter-on-target">{p.on_target_pg} /p</span>
+              <span className="shooter-total">{p.shots_pg} tot</span>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ─── ResultScreen ────────────────────────────────────────────────
+function ResultScreen({ data, onBack }) {
+  return (
+    <div>
+      <div className="header">
+        <button className="header-back" onClick={onBack}>← betsync</button>
+      </div>
+
+      <div className="result-match-card fade-up">
+        <div className="result-match-title">⚽ {data.team_a} vs {data.team_b}</div>
+      </div>
+
+      <div className="result-section fade-up-1">
+        <div className="result-section-title">📊 Últimos 10 partidos</div>
+        <div className="form-cols">
+          <FormColumn name={data.team_a} form={data.form?.team_a} />
+          <FormColumn name={data.team_b} form={data.form?.team_b} />
+        </div>
+      </div>
+
+      <div className="result-section fade-up-2">
+        <div className="result-section-title">🎯 Top tiros a puerta</div>
+        <div className="shooters-cols">
+          <ShooterColumn name={data.team_a} shooters={data.shooters?.team_a} />
+          <ShooterColumn name={data.team_b} shooters={data.shooters?.team_b} />
+        </div>
+      </div>
+
+      <div className="result-section fade-up-3">
+        <div className="result-section-title">🔮 Contexto y predicción</div>
+        <p className="pred-context">{data.context}</p>
+        <hr className="pred-divider" />
+        <p className="pred-prediction">{data.prediction}</p>
+      </div>
+
+      <button className="btn-back" onClick={onBack}>← NUEVO ANÁLISIS</button>
+    </div>
+  );
+}
+
+// ─── SkeletonChips ───────────────────────────────────────────────
+function SkeletonChips() {
+  return (
+    <div>
+      {[...Array(6)].map((_, i) => (
+        <div key={i} className="skeleton skeleton-chip" style={{ marginBottom: 8 }} />
+      ))}
+    </div>
+  );
+}
+
+// ─── AnalyzeTab ──────────────────────────────────────────────────
+function AnalyzeTab({ onResult }) {
+  const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [upcoming, setUpcoming] = useState(null);
+  const [cachedKeys, setCachedKeys] = useState({});
+
+  // Load upcoming matches and check cache for each
+  useEffect(() => {
+    let cancelled = false;
+    async function loadUpcoming() {
+      try {
+        const text = await apiAnalyze(UPCOMING_PROMPT, 1200);
+        if (cancelled) return;
+        const parsed = safeParseJSON(text);
+        const matches = parsed?.matches || [];
+        setUpcoming(matches);
+
+        // Check cache for each match
+        const checks = await Promise.all(
+          matches.map(m => apiCheckCache(m.home, m.away))
+        );
+        if (cancelled) return;
+        const keys = {};
+        matches.forEach((m, i) => {
+          if (checks[i]?.cached) {
+            keys[`${m.home}|${m.away}`] = true;
+          }
+        });
+        setCachedKeys(keys);
+      } catch {
+        if (!cancelled) setUpcoming([]);
+      }
+    }
+    loadUpcoming();
+    return () => { cancelled = true; };
+  }, []);
+
+  async function runAnalysis(teamInput) {
+    setError("");
+    setLoading(true);
+    try {
+      const teams = parseTeams(teamInput);
+      if (teams) {
+        const cached = await apiCheckCache(teams[0], teams[1]);
+        if (cached.cached) {
+          onResult(cached.data);
+          setLoading(false);
+          return;
+        }
+      }
+      const text = await apiAnalyze(buildMatchPrompt(teamInput));
+      const parsed = safeParseJSON(text);
+      if (!parsed) throw new Error("Respuesta inválida de la IA");
+      if (parsed.error) throw new Error(parsed.error);
+      onResult(parsed);
+    } catch (e) {
+      setError(e.message || "Error desconocido");
+    }
+    setLoading(false);
+  }
+
+  function handleSubmit(e) {
+    e && e.preventDefault();
+    if (input.trim()) runAnalysis(input.trim());
+  }
+
+  function handleChip(m) {
+    const label = `${m.home} vs ${m.away}`;
+    setInput(label);
+    runAnalysis(label);
+  }
+
+  return (
+    <div>
+      <form onSubmit={handleSubmit} style={{ marginBottom: 0 }}>
+        <div className="input-wrap">
+          <input
+            className="input-field"
+            type="text"
+            value={input}
+            onChange={e => { setInput(e.target.value); setError(""); }}
+            placeholder="Escribe el partido..."
+            disabled={loading}
+            autoComplete="off"
+            autoCorrect="off"
+            spellCheck="false"
+          />
+        </div>
+        <button className="btn-analyze" type="submit" disabled={!input.trim() || loading}>
+          {loading ? <span className="spinner" /> : null}
+          {loading ? "ANALIZANDO..." : "ANALIZAR ⚽"}
+        </button>
+      </form>
+
+      <p className="helper-text">Escríbelo como quieras: Barça vs Madrid, athletic betis, Atleti contra Sevilla...</p>
+
+      {error && <div className="error-box">⚠️ {error}</div>}
+
+      <div className="section-title">📅 Próximos partidos en Europa</div>
+
+      {upcoming === null ? (
+        <SkeletonChips />
+      ) : upcoming.length === 0 ? (
+        <p style={{ color: "var(--muted)", fontSize: 13 }}>No se pudieron cargar los próximos partidos.</p>
+      ) : (
+        <div className="upcoming-grid">
+          {upcoming.map((m, i) => {
+            const isCached = !!cachedKeys[`${m.home}|${m.away}`];
+            return (
+              <div key={i} className="match-chip" onClick={() => handleChip(m)}>
+                <span className="league-badge" style={{ background: leagueBg(m.league) }}>
+                  {m.league?.split(" ")[0]}
+                </span>
+                <span className="chip-teams">{m.home} vs {m.away}</span>
+                <span className="chip-date">{m.date}</span>
+                {isCached && <span className="chip-cached">✓ LISTO</span>}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── SavedTab ────────────────────────────────────────────────────
+function SavedTab({ onResult }) {
+  const [analyses, setAnalyses] = useState(null);
+
+  useEffect(() => {
+    apiGetSaved().then(setAnalyses);
+  }, []);
+
+  if (analyses === null) {
+    return (
+      <div>
+        {[...Array(3)].map((_, i) => (
+          <div key={i} className="skeleton" style={{ height: 64, borderRadius: 10, marginBottom: 8 }} />
+        ))}
+      </div>
+    );
+  }
+
+  if (analyses.length === 0) {
+    return (
+      <div className="saved-empty">
+        <div className="saved-empty-icon">💾</div>
+        <p>Aún no hay análisis guardados</p>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <div className="saved-list">
+        {analyses.map((a, i) => (
+          <div key={i} className="saved-item" onClick={() => onResult(a.data)}>
+            <div className="saved-item-title">⚽ {a.data?.team_a} vs {a.data?.team_b}</div>
+            <div className="saved-item-meta">{timeAgo(a.savedAt)}</div>
+          </div>
+        ))}
+      </div>
+      <p className="saved-note">Compartidos entre dispositivos · Expiran a las 24h</p>
+    </div>
+  );
+}
+
+// ─── App ─────────────────────────────────────────────────────────
+function App() {
+  const [tab, setTab] = useState("analyze");
+  const [result, setResult] = useState(null);
+  const [savedCount, setSavedCount] = useState(null);
+
+  useEffect(() => {
+    apiGetSaved().then(a => setSavedCount(a.length));
+  }, [result]);
+
+  if (result) {
+    return (
+      <div className="app">
+        <ResultScreen data={result} onBack={() => setResult(null)} />
+      </div>
+    );
+  }
+
+  return (
+    <div className="app">
+      <div className="header">
+        <span className="header-logo">⚽ betsync</span>
+      </div>
+
+      <div className="tabs">
+        <button className={`tab ${tab === "analyze" ? "active" : ""}`} onClick={() => setTab("analyze")}>
+          ⚽ Analizar
+        </button>
+        <button className={`tab ${tab === "saved" ? "active" : ""}`} onClick={() => setTab("saved")}>
+          💾 Guardados{savedCount !== null ? ` (${savedCount})` : ""}
+        </button>
+      </div>
+
+      {tab === "analyze"
+        ? <AnalyzeTab onResult={setResult} />
+        : <SavedTab onResult={setResult} />
+      }
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>
